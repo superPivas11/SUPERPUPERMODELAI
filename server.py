@@ -1,8 +1,8 @@
 import os
 import tempfile
-import asyncio
+import wave
+import struct
 from fastapi import FastAPI, WebSocket
-from pydub import AudioSegment
 from groq import Groq
 
 # --- НАСТРОЙКИ ---
@@ -35,14 +35,13 @@ def recognize_whisper(wav_file_path):
         )
         return transcript.text
 
-def convert_raw_to_wav(raw_data):
-    audio = AudioSegment(
-        data=raw_data,
-        sample_width=2,
-        frame_rate=16000,
-        channels=1
-    )
-    return audio
+def save_raw_as_wav(raw_data, filename):
+    """Сохраняет сырые PCM данные как WAV файл"""
+    with wave.open(filename, 'wb') as wav_file:
+        wav_file.setnchannels(1)  # моно
+        wav_file.setsampwidth(2)  # 16 бит = 2 байта
+        wav_file.setframerate(16000)  # 16kHz
+        wav_file.writeframes(raw_data)
 
 @app.get("/")
 async def root():
@@ -66,11 +65,11 @@ async def websocket_endpoint(websocket: WebSocket):
         
         print(f"Получено {len(all_data)} байт аудио")
         
-        # Конвертируем и сохраняем
-        audio_segment = convert_raw_to_wav(all_data)
+        # Сохраняем как WAV
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmpfile:
-            audio_segment.export(tmpfile.name, format="wav")
             temp_filename = tmpfile.name
+        
+        save_raw_as_wav(bytes(all_data), temp_filename)
         
         # Распознавание
         text = recognize_whisper(temp_filename)
