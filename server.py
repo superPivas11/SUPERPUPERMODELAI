@@ -17,7 +17,7 @@ def get_groq_response(text):
         response = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "Ты голосовой ассистент. Отвечай кратко, не более 10 слов. Отвечай на русском языке."},
+                {"role": "system", "content": "Ты голосовой ассистент. Отвечай кратко, не более 10 слов. Отвечай на русском английскими символами ТРАНСЛИТОМ ."},
                 {"role": "user", "content": text}
             ]
         )
