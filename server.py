@@ -15,9 +15,9 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 def get_groq_response(text):
     try:
         response = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="moonshotai/kimi-k2-instruct",
             messages=[
-                {"role": "system", "content": "Ты голосовой ассистент. Отвечай не менее 10 слов, но не более 15 слов НЕ ИСПОЛЬЗУЙ КИРРИЛИЦУ И ПРОЧИЕ НЕПОНЯТНЫЕ ЗНАКИ ЗА ИСКЛЮЧАЕНИЕМ СТАНДАРТНЫХ. СТРОГО только латинскими буквами (транслитом) также если тебя спросят решить какой нибудь пример пиши цифрами ответ, если спросят дату пиши цифрами, если спросят ответ где можно ответить цифрами отвеча цифрами"},
+                {"role": "system", "content": "Ты голосовой ассистент. Отвечай очень кратко, не более 10 слов. СТРОГО только латинскими буквами (транслитом)"},
                 {"role": "user", "content": text}
             ]
         )
@@ -91,8 +91,3 @@ async def websocket_endpoint(websocket: WebSocket):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=PORT)
-
-
-
-
-
