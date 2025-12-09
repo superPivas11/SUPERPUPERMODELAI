@@ -15,7 +15,7 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 def get_groq_response(text):
     try:
         response = groq_client.chat.completions.create(
-            model="moonshotai/kimi-k2-instruct",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": "Ты голосовой ассистент. Отвечай кратко, около 10 слов  на русском языке не используй какието иные знаки кроме стнадартных, если просят назвать дату пиши числами если попросят решить пример отвечай также числами"},
                 {"role": "user", "content": text}
@@ -91,6 +91,7 @@ async def websocket_endpoint(websocket: WebSocket):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=PORT)
+
 
 
 
