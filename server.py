@@ -3,19 +3,35 @@ import tempfile
 import wave
 from fastapi import FastAPI, WebSocket
 from groq import Groq
+import uvicorn
 
 # --- НАСТРОЙКИ ---
-PORT = int(os.environ.get("PORT", 8080))
+PORT = int(os.environ.get("PORT", 10000))
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "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")
 
 app = FastAPI()
-groq_client = Groq(api_key=GROQ_API_KEY)
+
+# Проверяем доступность API ключа
+print(f"DEBUG: API Key exists: {bool(GROQ_API_KEY)}")
+if not GROQ_API_KEY or GROQ_API_KEY == "your-api-key-here":
+    print("ERROR: Please set GROQ_API_KEY environment variable")
+
+# Инициализируем клиент Groq (новый синтаксис)
+try:
+    groq_client = Groq(api_key=GROQ_API_KEY)
+    print("DEBUG: Groq client initialized successfully")
+except Exception as e:
+    print(f"ERROR: Failed to initialize Groq client: {e}")
+    groq_client = None
 
 def get_groq_response(text):
     """Получение ответа от LLM"""
     try:
         if not text or text.strip() == "":
             return "Не расслышал, повторите пожалуйста"
+        
+        if not groq_client:
+            return "Ошибка: сервис временно недоступен"
             
         response = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -32,9 +48,12 @@ def get_groq_response(text):
 def recognize_whisper(wav_file_path):
     """Распознавание речи через Whisper"""
     try:
+        if not groq_client:
+            return ""
+            
         with open(wav_file_path, "rb") as audio_file:
             transcript = groq_client.audio.transcriptions.create(
-                model="whisper-large-v3-turbo",  # Используем turbo версию, она быстрее
+                model="whisper-large-v3-turbo",
                 file=audio_file,
                 language="ru",
                 response_format="text",
@@ -50,7 +69,7 @@ def save_raw_as_wav(raw_data, filename):
     """Сохраняет сырые PCM данные как WAV файл"""
     try:
         # Проверяем, достаточно ли данных
-        if len(raw_data) < 3200:  # Меньше 0.1 секунды при 16kHz
+        if len(raw_data) < 3200:
             print(f"DEBUG: Слишком мало аудиоданных: {len(raw_data)} байт")
             return False
             
@@ -69,6 +88,20 @@ def save_raw_as_wav(raw_data, filename):
 @app.get("/")
 async def root():
     return {"status": "ok", "message": "Voice Assistant Server"}
+
+@app.get("/test")
+async def test():
+    """Тестовый эндпоинт для проверки работы"""
+    try:
+        test_text = "Привет, как дела?"
+        response = get_groq_response(test_text)
+        return {
+            "status": "ok",
+            "groq_client_initialized": groq_client is not None,
+            "test_response": response
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -150,5 +183,4 @@ async def websocket_endpoint(websocket: WebSocket):
         print("Соединение закрыто")
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=PORT)
